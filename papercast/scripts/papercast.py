@@ -1,10 +1,14 @@
 import re
 import click
 from tinydb.database import TinyDB
-from papercast.utils import (
+# from papercast.process import (
+
+# )
+from papercast.publish import (
     get_arxiv_article_properties,
     _check_article_in_db,
     _download_and_upsert_db,
+    _get_episode_metadata_from_db,
 )
 from pathlib import Path
 import os
@@ -77,29 +81,32 @@ def add(arxiv_id, pdf_dir, overwrite):
     required=False,
     help="Print output instead of writing to file.",
 )
-def update_xml(db, xml):
+def update_xml(db, xml, dry_run):
     if not db:
         db = _find_and_open_db()
     template = _find_and_open_template()
     config = _find_and_open_config()
-    with open("./feed.xml", "w") as f:
-        f.write(
-            template.render(
+    episode_meta = _get_episode_metadata_from_db(db,config["base_url"])
+    output = template.render(
                 episode_meta=episode_meta,
-                title=config["title"],
-                base_url=config["base_url"],
-                language=config["language"],  # should be en-us
-                xml_link=config["base_url"] + "feed.xml",
-                subtitle=config["subtitle"],
-                copyright=config["copyright"],
-                author=config["author"],
-                email=config["email"],
-                description=config["description"],
-                cover_path=config["cover_path"],
-                categores=config["categories"],
+                **config,
+                # title=config["title"],
+                # base_url=config["base_url"],
+                # language=config["language"],
+                # xml_link=config["base_url"] + "feed.xml",
+                # subtitle=config["subtitle"],
+                # copyright=config["copyright"],
+                # author=config["author"],
+                # email=config["email"],
+                # description=config["description"],
+                # cover_path=config["cover_path"],
+                # categores=config["categories"],
             )
-        )
-
+    if dry_run:
+        print(output)
+    else:
+        with open("./feed.xml", "w") as f:
+            f.write(output)
 
 def _find_and_open_db():
     db_path = _find_db_path()
