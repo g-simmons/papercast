@@ -1,2 +1,4 @@
 pyttsx3
 git+https://github.com/titipata/scipdf_parser#egg=scipdf
+click
+arxiv
