@@ -53,12 +53,12 @@ def get_arxiv_article_properties(arxiv_id):
 
 def _download_and_upsert_db(db, arxiv_id, overwrite=False):
     doc = {}
-
+    result = get_arxiv_article_properties(arxiv_id)
     doc["title"] = result["title"]
     doc["arxiv_id"] = arxiv_id
     doc["authors"] = result["authors"]
 
-    outpath = arxiv.arxiv.download(results, dirpath="./data/pdfs")
+    outpath = arxiv.arxiv.download(result, dirpath="./data/pdfs")
 
     print(f"Downloaded pdf to {outpath}")
     doc["outpath"] = outpath
@@ -87,25 +87,10 @@ def _get_article_dict(pdf_path):
     return article_dict
 
 
-def _parse_to_txt(db, article_dict):
-    article_dict = _get_article_dict(pdf_path)
-    txt = get_text_from_dict(article_dict)
-
-
-#     doc['article_content'] = article_dict
-#     doc['text'] = txt
-
-#     txtpath = outpath.replace('pdf','txt')
-
-#     with open(txtpath,'w') as f:
-#         f.write(txt)
-#     print(f'Wrote txt to {txtpath}')
-
-
-def _say(txtpath):
-    aiffpath = txtpath.replace("txt", "aiff")
-    cmd = ["say", "-f", txtpath, "-o", aiffpath]
-    subprocess.run(cmd)
+# def _say(txtpath):
+#     aiffpath = txtpath.replace("txt", "aiff")
+#     cmd = ["say", "-f", txtpath, "-o", aiffpath]
+#     subprocess.run(cmd)
 
 
 def _get_mp3_size_length(mp3_path: str):

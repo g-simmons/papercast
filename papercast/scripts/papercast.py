@@ -10,6 +10,9 @@ from pathlib import Path
 import os
 import glob
 from tinydb import TinyDB
+import json
+from jinja2 import Template
+from papercast.template import TEMPLATE
 
 
 @click.group()
@@ -38,6 +41,9 @@ def init(project_name, force):
         subdir = project_dir / sub
         _safe_mkdir(subdir)
 
+    with open(project_dir / "template.xml.jinja", "w") as f:
+        f.write(TEMPLATE)
+
 
 @papercast.command()
 @click.option("--arxiv-id", default=None, required=True)
@@ -57,19 +63,42 @@ def add(arxiv_id, pdf_dir, overwrite):
     "--db",
     default=None,
     required=False,
-    help="Path to article TinyDB. By default subfolders are checked for db.json",
+    help="Path to article TinyDB. By default subfolders are checked for db.json.",
 )
 @click.option(
     "--xml",
     default=None,
     required=False,
-    help="Path to feed XML file. By default subfolders are checked for feed.xml",
+    help="Path to feed XML file. By default subfolders are checked for feed.xml.",
+)
+@click.option(
+    "--dry-run",
+    default=False,
+    required=False,
+    help="Print output instead of writing to file.",
 )
 def update_xml(db, xml):
     if not db:
         db = _find_and_open_db()
-    if not xml:
-        xml = _find_xml()
+    template = _find_and_open_template()
+    config = _find_and_open_config()
+    with open("./feed.xml", "w") as f:
+        f.write(
+            template.render(
+                episode_meta=episode_meta,
+                title=config["title"],
+                base_url=config["base_url"],
+                language=config["language"],  # should be en-us
+                xml_link=config["base_url"] + "feed.xml",
+                subtitle=config["subtitle"],
+                copyright=config["copyright"],
+                author=config["author"],
+                email=config["email"],
+                description=config["description"],
+                cover_path=config["cover_path"],
+                categores=config["categories"],
+            )
+        )
 
 
 def _find_and_open_db():
@@ -84,7 +113,15 @@ def _find_db_path(fname="db.json") -> str:
     return results[0]
 
 
-def _find_xml(fname="feed.xml") -> str:
+def _find_and_open_template(fname="template.xml.jinja") -> str:
     globstr = os.path.join(os.getcwd(), "**/", fname)
     results = glob.glob(globstr)
-    return results[0]
+    return Template(open(results[0], "r").read())
+
+
+def _find_and_open_config(fname="config.json") -> str:
+    globstr = os.path.join(os.getcwd(), "**/", fname)
+    results = glob.glob(globstr)
+    with open(results[0], "r") as f:
+        config = json.load(f)
+    return config
